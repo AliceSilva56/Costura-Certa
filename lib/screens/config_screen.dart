@@ -1,0 +1,1 @@
+//Configurações, backup, conta etc.
