@@ -4,12 +4,15 @@ import 'routes.dart';
 import 'services/pedidos_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
+import 'services/database_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseService.init();
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => PedidosProvider()),
+        ChangeNotifierProvider(create: (_) => PedidosProvider()..carregar()),
       ],
       child: const CosturaCertaApp(),
     ),

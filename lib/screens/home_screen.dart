@@ -43,6 +43,13 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: const Color(0xFFFFF8E1),
         elevation: 2,
         iconTheme: const IconThemeData(color: Color(0xFF6A1B9A)),
+        actions: [
+          IconButton(
+            tooltip: 'Calculadora de Preço',
+            icon: const Icon(Icons.calculate),
+            onPressed: () => Navigator.pushNamed(context, '/calculadora'),
+          ),
+        ],
       ),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(

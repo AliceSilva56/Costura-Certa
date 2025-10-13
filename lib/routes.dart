@@ -5,6 +5,7 @@ import 'screens/tecidos_screen.dart';
 import 'screens/pedidos_screen.dart';
 import 'screens/financeiro_screen.dart';
 import 'screens/config_screen.dart';
+import 'screens/calculadora_screen.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
   '/': (context) => const HomeScreen(),
@@ -13,4 +14,5 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/pedidos': (context) => const PedidosScreen(),
   '/financeiro': (context) => const FinanceiroScreen(),
   '/config': (context) => const ConfigScreen(),
+  '/calculadora': (context) => const CalculadoraScreen(),
 };
