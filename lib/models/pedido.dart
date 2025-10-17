@@ -6,9 +6,12 @@ class Pedido {
   final String id;
   final String cliente;
   final String descricao;
-  final double valor;  // valor total do pedido
-  final double? tecido; // gasto com tecido (opcional, legado)
-  final double? tempo;  // custo de mão de obra (opcional, legado)
+  final double valor;  // valor total do pedido (total)
+  final double? tecido; // gasto com tecido (opcional)
+  final double? tempo;  // custo de mão de obra (legado)
+  final double? gastosExtras; // novos gastos extras
+  final double? maoDeObra;   // alias moderno para tempo
+  final double? desconto;    // descontos aplicados
 
   // Novos campos para cálculo detalhado
   final List<Insumo> itensInsumo;
@@ -31,6 +34,9 @@ class Pedido {
     required this.valor,
     this.tecido,
     this.tempo,
+    this.gastosExtras,
+    this.maoDeObra,
+    this.desconto,
     this.itensInsumo = const [],
     this.tempoHoras,
     this.valorHora,
@@ -52,6 +58,9 @@ class Pedido {
         'valor': valor,
         'tecido': tecido,
         'tempo': tempo,
+        'gastosExtras': gastosExtras,
+        'maoDeObra': maoDeObra,
+        'desconto': desconto,
         'itensInsumo': itensInsumo.map((e) => e.toMap()).toList(),
         'tempoHoras': tempoHoras,
         'valorHora': valorHora,
@@ -73,6 +82,11 @@ class Pedido {
         valor: (map['valor'] ?? 0).toDouble(),
         tecido: map['tecido'] == null ? null : (map['tecido']).toDouble(),
         tempo: map['tempo'] == null ? null : (map['tempo']).toDouble(),
+        gastosExtras: map['gastosExtras'] == null ? null : (map['gastosExtras']).toDouble(),
+        maoDeObra: map['maoDeObra'] == null
+            ? (map['tempo'] == null ? null : (map['tempo']).toDouble())
+            : (map['maoDeObra']).toDouble(),
+        desconto: map['desconto'] == null ? null : (map['desconto']).toDouble(),
         itensInsumo: ((map['itensInsumo'] ?? []) as List)
             .map((e) => Insumo.fromMap(e as Map))
             .toList(),

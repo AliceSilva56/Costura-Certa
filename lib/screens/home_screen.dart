@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'medidas_screen.dart';
 import 'pedidos_screen.dart';
 import 'financeiro_screen.dart';
 import 'config_screen.dart';
+import '../services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,74 +12,67 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  int _index = 0;
 
-  final List<Widget> _screens = const [
-    MedidasScreen(),
+  final List<Widget> _tabs = const [
     PedidosScreen(),
     FinanceiroScreen(),
     ConfigScreen(),
   ];
 
-  final List<String> _titles = [
-    "Medidas",
-    "Pedidos",
-    "Financeiro",
-    "Configurações",
+  final List<String> _titles = const [
+    'Pedidos',
+    'Financeiro',
+    'Configurações',
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _titles[_currentIndex],
-          style: const TextStyle(
-            color: Color(0xFF333333),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
         backgroundColor: const Color(0xFFFFF8E1),
-        elevation: 2,
-        iconTheme: const IconThemeData(color: Color(0xFF6A1B9A)),
+        elevation: 0,
+        centerTitle: true,
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _titles[_index],
+              style: const TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 2),
+            FutureBuilder<String?>(
+              future: AuthService.instance.getUserName(),
+              builder: (context, snapshot) {
+                final name = (snapshot.data ?? '').trim();
+                final greet = name.isEmpty ? 'Bem-vinda!' : 'Bem-vinda, $name!';
+                return Text(
+                  greet,
+                  style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+                );
+              },
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Calculadora de Preço',
-            icon: const Icon(Icons.calculate),
+            icon: const Icon(Icons.calculate, color: Color(0xFF6A1B9A)),
             onPressed: () => Navigator.pushNamed(context, '/calculadora'),
           ),
         ],
       ),
-      body: _screens[_currentIndex],
+      body: _tabs[_index],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: const Color(0xFFFFD54F),
-        unselectedItemColor: const Color(0xFF6A1B9A),
+        currentIndex: _index,
         backgroundColor: const Color(0xFFFFF8E1),
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        selectedItemColor: const Color(0xFF6A1B9A),
+        unselectedItemColor: const Color(0xFF9E9E9E),
+        onTap: (i) => setState(() => _index = i),
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.straighten),
-            label: "Medidas",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: "Pedidos",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.attach_money),
-            label: "Financeiro",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: "Config",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Pedidos'),
+          BottomNavigationBarItem(icon: Icon(Icons.attach_money), label: 'Financeiro'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Config'),
         ],
       ),
     );

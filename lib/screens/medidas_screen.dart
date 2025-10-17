@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import '../widgets/custom_input.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_card.dart';
+import '../services/medidas_service.dart';
 
 class MedidasScreen extends StatefulWidget {
   const MedidasScreen({super.key});
@@ -11,161 +9,92 @@ class MedidasScreen extends StatefulWidget {
 }
 
 class _MedidasScreenState extends State<MedidasScreen> {
-  final List<Map<String, String>> medidas = [];
-
-  final TextEditingController clienteController = TextEditingController();
-  final TextEditingController pecaController = TextEditingController();
-  final TextEditingController observacaoController = TextEditingController();
-  int? editIndex;
+  List<Map> _items = [];
 
   @override
-  void dispose() {
-    clienteController.dispose();
-    pecaController.dispose();
-    observacaoController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _load();
   }
 
-  void _abrirFormulario({Map<String, String>? medida, int? index}) {
-    if (medida != null) {
-      clienteController.text = medida["cliente"]!;
-      pecaController.text = medida["peca"]!;
-      observacaoController.text = medida["observacao"]!;
-      editIndex = index;
-    } else {
-      clienteController.clear();
-      pecaController.clear();
-      observacaoController.clear();
-      editIndex = null;
-    }
+  Future<void> _load() async {
+    final list = await MedidasService.listar();
+    if (mounted) setState(() => _items = list);
+  }
 
-    showDialog(
+  Future<void> _add() async {
+    final nomeCtrl = TextEditingController();
+    final obsCtrl = TextEditingController();
+    await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(editIndex == null ? "Nova Medida" : "Editar Medida"),
-        content: SingleChildScrollView(
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nova Medida'),
+        content: SizedBox(
+          width: 420,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              CustomInput(
-                hint: "Nome do Cliente",
-                controller: clienteController,
-                prefixIcon: Icons.person,
-              ),
-              const SizedBox(height: 12),
-              CustomInput(
-                hint: "Peça",
-                controller: pecaController,
-                prefixIcon: Icons.checkroom,
-              ),
-              const SizedBox(height: 12),
-              CustomInput(
-                hint: "Observações",
-                controller: observacaoController,
-                prefixIcon: Icons.note,
-              ),
+              TextField(controller: nomeCtrl, maxLines: 1, decoration: const InputDecoration(labelText: 'Nome do cliente', isDense: true)),
+              const SizedBox(height: 8),
+              TextField(controller: obsCtrl, maxLines: 4, decoration: const InputDecoration(labelText: 'Medidas/Observações', isDense: true)),
             ],
           ),
         ),
         actions: [
-          CustomButton(
-            text: editIndex == null ? "Salvar" : "Atualizar",
-            onPressed: () {
-              final cliente = clienteController.text;
-              final peca = pecaController.text;
-
-              if (cliente.isEmpty || peca.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Preencha os campos obrigatórios")),
-                );
-                return;
-              }
-
-              setState(() {
-                if (editIndex != null) {
-                  medidas[editIndex!] = {
-                    "cliente": cliente,
-                    "peca": peca,
-                    "observacao": observacaoController.text,
-                  };
-                } else {
-                  medidas.add({
-                    "cliente": cliente,
-                    "peca": peca,
-                    "observacao": observacaoController.text,
-                  });
-                }
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () async {
+              await MedidasService.adicionar({
+                'nome': nomeCtrl.text.trim(),
+                'obs': obsCtrl.text.trim(),
+                'createdAt': DateTime.now().toIso8601String(),
               });
-
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(editIndex != null ? "Medida atualizada!" : "Medida salva!"),
-                ),
-              );
+              if (mounted) {
+                Navigator.pop(ctx);
+                await _load();
+              }
             },
+            child: const Text('Salvar'),
           ),
         ],
       ),
     );
   }
 
-  void _excluirMedida(int index) {
-    setState(() {
-      medidas.removeAt(index);
-    });
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Medida excluída!")));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: medidas.isEmpty
-            ? const Center(
-                child: Text(
-                  "Nenhuma medida cadastrada.\nClique no + para adicionar.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                ),
-              )
-            : ListView.builder(
-                itemCount: medidas.length,
-                itemBuilder: (context, index) {
-                  final medida = medidas[index];
-                  return CustomCard(
-                    child: ListTile(
-                      title: Text(medida["cliente"]!),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Peça: ${medida["peca"]}"),
-                          Text("Observação: ${medida["observacao"]}"),
-                        ],
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () =>
-                                _abrirFormulario(medida: medida, index: index),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _excluirMedida(index),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFF8E1),
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.black),
+        title: const Text(
+          'Medidas',
+          style: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView.builder(
+        itemCount: _items.length,
+        itemBuilder: (context, index) {
+          final item = _items[index];
+          return Dismissible(
+            key: ValueKey('${item['createdAt']}_$index'),
+            background: Container(color: Colors.redAccent),
+            onDismissed: (_) async {
+              await MedidasService.removerAt(index);
+              await _load();
+            },
+            child: ListTile(
+              leading: const Icon(Icons.straighten, color: Color(0xFF6A1B9A)),
+              title: Text(item['nome'] ?? ''),
+              subtitle: Text(item['obs'] ?? ''),
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _abrirFormulario(),
-        backgroundColor: const Color(0xFF6A1B9A),
+        onPressed: _add,
         child: const Icon(Icons.add),
       ),
     );

@@ -1,224 +1,129 @@
-# Costura Certa
+<div align="center">
+  <h1>💎 PROJETO: <span style="color:#6A1B9A">COSTURA CERTA</span></h1>
+  <p>
+    <em>Gestão simples, bonita e 100% offline para ateliês e costureiras</em>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/flutter-3.x-blue.svg" alt="Flutter"/>
+    <img src="https://img.shields.io/badge/hive-offline%20storage-FFD54F.svg" alt="Hive"/>
+    <img src="https://img.shields.io/badge/provider-state--management-6A1B9A.svg" alt="Provider"/>
+  </p>
+  <p>
+    <a href="#o-que-h%C3%A1-no-projeto-atual"><b>Funcionalidades</b></a> ·
+    <a href="#arquitetura-e-rotas"><b>Arquitetura</b></a> ·
+    <a href="#como-executar"><b>Como executar</b></a> ·
+    <a href="#roadmap-pr%C3%B3ximas-entregas"><b>Roadmap</b></a>
+  </p>
+</div>
 
-Aplicativo Flutter para auxiliar costureiras a calcular preços, registrar serviços e acompanhar desempenho. O foco é transparência de custos (materiais, mão de obra, operacional) e sugestões de preço baseadas em margem de lucro e referências de mercado.
+<details>
+  <summary><b>🚀 Visão Geral</b></summary>
+  <p>
+    Um sistema local e inteligente de gestão para costureiras, autônomos e pequenos empreendedores.
+    Focado em simplicidade, cálculos automáticos e organização financeira <b>sem internet</b>.
+  </p>
+  <ul>
+    <li>Registrar pedidos de clientes.</li>
+    <li>Calcular custos, lucros e totais automaticamente.</li>
+    <li>Controlar entradas, gastos e lucro líquido.</li>
+    <li>Acompanhar o desempenho financeiro do ateliê.</li>
+  </ul>
+</details>
 
-> Aviso: demais funcionalidades e telas estão em desenvolvimento. Valores de referência são indicativos e podem variar por região e complexidade.
+<details>
+  <summary><b>🎨 Tema</b></summary>
+  <ul>
+    <li>Apenas modo claro.</li>
+    <li>Cores suaves e elegantes (bege claro, lilás e dourado).</li>
+    <li>Visual limpo, organizado e responsivo.</li>
+  </ul>
+</details>
 
-## Funcionalidades
+---
 
-- **Calculadora de Preço**
-- **Tabela de Referência** (valores indicativos de consertos/peças)
-- **Cadastro de Projetos/Pedidos**
-- **Simulador Rápido** (presets rápidos)
-- **Estatísticas** (faturamento, serviços comuns, tempo médio)
+## O que há no projeto (atual)
+
+<table>
+  <tr>
+    <td><b>🔐 Autenticação local</b><br/><sub>Hive com nome, PIN (opcional) e lembrar acesso.</sub></td>
+    <td><b>🧭 Navegação inferior</b><br/><sub>Abas: Pedidos, Financeiro e Configurações.</sub></td>
+  </tr>
+  <tr>
+    <td><b>🧵 Pedidos</b><br/><sub>Status, “Pago/Não pago” colorido, pop-up de novo/editar com cálculo e toggle Pago, pergunta ao concluir, filtros por status/pagos.</sub></td>
+    <td><b>📄 Detalhes do Pedido</b><br/><sub>Editar (toggle Pago), concluir com pergunta e AppBar com seta preta.</sub></td>
+  </tr>
+  <tr>
+    <td><b>💰 Financeiro</b><br/><sub>Cards responsivos (Receita, Gastos, Lucro) e pedidos recentes sem overflow.</sub></td>
+    <td><b>⚙️ Configurações</b><br/><sub>Perfil (editar Nome/Ateliê e PIN mascarado), Excluir conta com PIN, atalhos para Clientes e Medidas, Backup (placeholder).</sub></td>
+  </tr>
+  <tr>
+    <td><b>👥 Clientes</b><br/><sub>Agrupa por cliente com cores de inadimplência (0=verde, 1=amarelo, ≥2=vermelho) e tela de detalhes.</sub></td>
+    <td><b>📏 Medidas</b><br/><sub>Cadastro simples de medidas/observações por cliente (Hive `medidas_box_v1`).</sub></td>
+  </tr>
+</table>
+
+## Arquitetura e rotas
+
+- **Camadas**
+  - `models/` — modelos como `pedido.dart`, `insumo.dart`.
+  - `services/` — `auth_service.dart`, `database_service.dart`, `pedidos_provider.dart`, `calculadora_preco_service.dart`, `medidas_service.dart`.
+  - `screens/` — `login_screen.dart`, `home_screen.dart`, `pedidos_screen.dart`, `detalhes_pedido_screen.dart`, `financeiro_screen.dart`, `config_screen.dart`, `clientes_screen.dart`, `cliente_detalhes_screen.dart`, `medidas_screen.dart`.
+  - `theme/` — `app_theme.dart` (tema claro e paleta centralizada).
+  - `widgets/` — componentes (`custom_card.dart`, `custom_button.dart`, etc.).
+
+- **Rotas** definidas em `lib/routes.dart`:
+  - `'/login'`, `'/pedidos'`, `'/detalhes'`, `'/financeiro'`, `'/config'`, `'/calculadora'`, `'/clientes'`, `'/cliente_detalhes'`, `'/medidas'`.
 
 ## Tecnologias
 
-- **Flutter** (Material 3)
-- **State Management**: `provider`
-- **Persistência local**: `hive`, `hive_flutter`
+- Flutter + Provider + Hive (persistência offline)
+- `intl` para formatação PT-BR (a aplicar gradualmente nas telas)
 
-## Arquitetura (camadas)
+## Cálculos Automáticos
 
-- **`lib/models/`**: modelos de domínio (`Pedido`, `Insumo`, `TabelaReferenciaItem`).
-- **`lib/services/`**: regras de negócio e infraestrutura
-  - `calculadora_preco_service.dart`
-  - `tabela_referencia_service.dart`
-  - `database_service.dart` (Hive)
-  - `pedidos_provider.dart` (estado com Provider)
-- **`lib/screens/`**: telas (UI)
-- **`lib/widgets/`**: componentes reutilizáveis
+- Mão de obra sugerida: `(valorTecido + gastosExtras) × 0.5`
+- Total: `(valorTecido + gastosExtras + maoDeObra) - desconto`
+- Lucro: `total - (valorTecido + gastosExtras)`
 
-## Estrutura do projeto
+## Como executar
 
-```
-lib/
-  main.dart
-  routes.dart
-  models/
-    pedido.dart
-    insumo.dart
-    tabela_referencia_item.dart
-  services/
-    calculadora_preco_service.dart
-    tabela_referencia_service.dart
-    database_service.dart
-    pedidos_provider.dart
-  screens/
-    home_screen.dart
-    calculadora_screen.dart
-    pedidos_screen.dart
-    medidas_screen.dart
-    tecidos_screen.dart
-    financeiro_screen.dart
-    config_screen.dart
-  theme/
-  utils/
-  widgets/
+```bash
+flutter pub get
+flutter run
 ```
 
-## Modelos principais
+---
 
-- **`Pedido`** (`lib/models/pedido.dart`)
-  - `id`, `cliente`, `descricao`, `valor`
-  - `itensInsumo: List<Insumo>`
-  - `tempoHoras`, `valorHora`
-  - `custoOperacional`, `margemLucroPercent`
-  - `status`, `dataCriacao`, `dataEntregaPrevista`, `dataEntregaReal`, `dataPagamento`
-  - `precoSugerido`, `precoFinal`
-  - `toMap()/fromMap()` para persistência em Hive (via Map, sem adapters)
+## Roadmap (próximas entregas)
 
-- **`Insumo`** (`lib/models/insumo.dart`)
-  - `nome`, `tipo`, `unidade`, `quantidade`, `custoUnitario`
-  - `custoTotal` (derivado), `toMap()/fromMap()`
+- **Formatos PT-BR**: aplicar `intl` em todas as telas (valores e datas).
+- **Pagamentos**: filtros avançados, relatórios de recebimentos por período.
+- **Gráficos**: lucro por mês e KPIs visuais.
+- **Exportação/Backup**: exportar dados localmente (CSV/JSON) e restauração.
+- **Testes**: unidade e widget (principalmente cálculos e providers).
 
-- **`TabelaReferenciaItem`** (`lib/models/tabela_referencia_item.dart`)
-  - `tipo` (conserto | peça do zero), `titulo`, `descricao`
-  - `precoMedioMin`, `precoMedioMax`, `preset`, `observacao`
+---
 
-## Serviços
+<details>
+  <summary><b>🗺️ Fluxo de Telas</b></summary>
 
-- **Calculadora** (`lib/services/calculadora_preco_service.dart`)
-  - Fórmula:
-    - `custoMateriais = sum(insumo.custoTotal)`
-    - `custoMaoObra = tempoHoras * valorHora`
-    - `subtotal = custoMateriais + custoMaoObra + custoOperacional`
-    - `precoSugerido = subtotal * (1 + margem/100)`
-  - Retorno: `PriceBreakdown` com detalhamento
-
-- **Tabela de Referência** (`lib/services/tabela_referencia_service.dart`)
-  - Lista mock de consertos/peças e busca por texto/tipo
-  - Valores são apenas referências
-
-- **Banco de dados** (`lib/services/database_service.dart`)
-  - `Hive.initFlutter()` em `main.dart`
-  - Box: `pedidos_box_v1`
-  - CRUD de `Pedido` serializado para `Map`
-
-- **Estado** (`lib/services/pedidos_provider.dart`)
-  - Lista de pedidos, receita total, gastos com tecidos, lucro estimado
-  - Integração com `DatabaseService` (carregar/adicionar/editar/remover)
-
-## Telas
-
-- **Home** (`lib/screens/home_screen.dart`)
-  - BottomNavigation com abas: Medidas, Pedidos, Financeiro, Config
-  - Acesso rápido à Calculadora (ícone na AppBar)
-
-- **Calculadora de Preço** (`lib/screens/calculadora_screen.dart`)
-  - Formulário: cliente, descrição, materiais (R\$), tempo (h), valor-hora (R\$), custo operacional (R\$), margem (%)
-  - Resultado detalhado e opção de salvar como `Pedido`
-  - Aviso: funcionalidades em desenvolvimento
-
-- **Demais telas**
-  - Pedidos, Medidas, Tecidos, Financeiro, Config: base existentes, serão expandidas
-
-## Padrões e configurações
-
-- **Padrões da Calculadora**
-  - `valorHora`: R$ 30,00
-  - `margemLucroPercent`: 30%
-
-- **Formatação**
-  - Recomendada: `intl` (`NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$')`) ao exibir valores nas telas (a aplicar nas próximas iterações)
-
-## Requisitos
-
-- Flutter SDK (versão compatível com `sdk: ^3.6.2` no `pubspec.yaml`)
-- Dart >= a versão exigida pelo SDK acima
-
-## Configuração e execução
-
-1. Instalar dependências:
-   ```sh
-   flutter pub get
-   ```
-2. Executar em debug (ex.: Chrome):
-   ```sh
-   flutter run
-   ```
-3. Build release (Android):
-   ```sh
-   flutter build apk --release
-   ```
-
-## Testes
-
-- A serem adicionados: testes de unidade para `CalculadoraPrecoService` e `TabelaReferenciaService`.
-
-## Roadmap
-
-- **Tabela de Referência**: tela com busca/filtro e envio para a Calculadora
-- **Simulador Rápido**: cards de presets (ex.: zíper, barra)
-- **Pedidos**: cadastro/edição com novos campos e status
-- **Estatísticas**: faturamento mensal, serviços mais comuns, tempo médio
-- **Persistência**: migração para adapters Hive opcionais ou Isar (se necessário)
-- **Formatação PT-BR**: monetária/decimal nas telas
-- **Testes**: unidade e widget
-
-## Contribuição
-
-- Abrir issues com sugestões/bugs
-- Padrões de código: `flutter_lints`
-- Commits pequenos e descritivos
-
-## Licença
-
-Este projeto é de uso pessoal/educacional. Adapte uma licença (ex.: MIT) conforme necessidade.
-
-## Estrutura do projeto
-
-```
-lib/
-  main.dart
-  routes.dart
-  models/
-    pedido.dart
-    insumo.dart
-    tabela_referencia_item.dart
-  services/
-    calculadora_preco_service.dart
-    tabela_referencia_service.dart
-    database_service.dart
-    pedidos_provider.dart
-  screens/
-    home_screen.dart
-    calculadora_screen.dart
-    pedidos_screen.dart
-    medidas_screen.dart
-    tecidos_screen.dart
-    financeiro_screen.dart
-    config_screen.dart
-  theme/
-  utils/
-  widgets/
+```mermaid
+flowchart TD
+  A[Login] --> B[Home]
+  B --> C[Pedidos]
+  C --> D[Pop-up Novo/Editar]
+  C --> E[Detalhes do Pedido]
+  B --> F[Financeiro]
+  B --> G[Configurações]
+  G --> H[Clientes]
+  H --> I[Detalhes do Cliente]
+  G --> J[Medidas]
 ```
 
-## Modelos principais
+</details>
 
-- **`Pedido`** (`lib/models/pedido.dart`)
-  - `id`, `cliente`, `descricao`, `valor`
-  - `itensInsumo: List<Insumo>`
-  - `tempoHoras`, `valorHora`
-  - `custoOperacional`, `margemLucroPercent`
-  - `status`, `dataCriacao`, `dataEntregaPrevista`, `dataEntregaReal`, `dataPagamento`
-  - `precoSugerido`, `precoFinal`
-  - `toMap()/fromMap()` para persistência em Hive (via Map, sem adapters)
+> Nota pessoal: este app está sendo desenvolvido primeiramente para ajudar minha mãe, que é costureira, e futuramente auxiliar outras pessoas como ela.
 
-- **`Insumo`** (`lib/models/insumo.dart`)
-  - `nome`, `tipo`, `unidade`, `quantidade`, `custoUnitario`
-  - `custoTotal` (derivado), `toMap()/fromMap()`
-
-- **`TabelaReferenciaItem`** (`lib/models/tabela_referencia_item.dart`)
-  - `tipo` (conserto | peça do zero), `titulo`, `descricao`
-  - `precoMedioMin`, `precoMedioMax`, `preset`, `observacao`
-
-Assim o usuário já tem noção sem precisar montar tudo do zero.
-
-Estatísticas
-
-Quanto já faturou no mês.
-
-Serviços mais comuns.
-
-Tempo médio gasto.
+---
+Costura Certa — gestão simples e offline para seu ateliê.
+- Um App que esta sendo desenvolvido primeiramnete para ajudar minha mãe que é uma costureira e futuramente auxiliar outra pessoas iguais a ela

@@ -38,12 +38,16 @@ class PedidosProvider extends ChangeNotifier {
 
   /// Receita total = soma de todos os valores dos pedidos
   double get receitaTotal =>
-      _pedidos.fold(0, (soma, pedido) => soma + pedido.valor);
+      _pedidos.fold(0, (soma, pedido) => soma + (pedido.valor));
 
-  /// Gastos com tecidos (se o modelo Pedido tiver esse campo)
+  /// Gastos com tecidos
   double get gastosTecidos =>
       _pedidos.fold(0, (soma, pedido) => soma + (pedido.tecido ?? 0));
 
-  /// Lucro estimado = receita - gastos
-  double get lucroEstimado => receitaTotal - gastosTecidos;
+  /// Lucro estimado = soma(total - (tecido + gastosExtras))
+  double get lucroEstimado => _pedidos.fold(0, (soma, p) {
+        final custos = (p.tecido ?? 0) + (p.gastosExtras ?? 0);
+        final lucro = (p.valor) - custos;
+        return soma + lucro;
+      });
 }

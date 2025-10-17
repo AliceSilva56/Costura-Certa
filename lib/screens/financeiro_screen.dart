@@ -16,39 +16,66 @@ class FinanceiroScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: CustomCard(
-                    child: ListTile(
-                      leading: const Icon(Icons.attach_money, color: Colors.green),
-                      title: const Text("Receita Total"),
-                      subtitle: Text("R\$ ${pedidosProvider.receitaTotal.toStringAsFixed(2)}"),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final narrow = constraints.maxWidth < 600;
+                final children = [
+                  Expanded(
+                    child: CustomCard(
+                      child: ListTile(
+                        leading: const Icon(Icons.attach_money, color: Colors.green),
+                        title: const Text("Receita Total"),
+                        subtitle: Text("R\$ ${pedidosProvider.receitaTotal.toStringAsFixed(2)}"),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: CustomCard(
-                    child: ListTile(
-                      leading: const Icon(Icons.shopping_bag, color: Colors.orange),
-                      title: const Text("Gastos"),
-                      subtitle: Text("R\$ ${pedidosProvider.gastosTecidos.toStringAsFixed(2)}"),
+                  const SizedBox(width: 8, height: 8),
+                  Expanded(
+                    child: CustomCard(
+                      child: ListTile(
+                        leading: const Icon(Icons.shopping_bag, color: Colors.orange),
+                        title: const Text("Gastos (tecidos)"),
+                        subtitle: Text("R\$ ${pedidosProvider.gastosTecidos.toStringAsFixed(2)}"),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: CustomCard(
-                    child: ListTile(
-                      leading: const Icon(Icons.trending_up, color: Colors.blue),
-                      title: const Text("Lucro"),
-                      subtitle: Text("R\$ ${pedidosProvider.lucroEstimado.toStringAsFixed(2)}"),
+                  const SizedBox(width: 8, height: 8),
+                  Expanded(
+                    child: CustomCard(
+                      child: ListTile(
+                        leading: const Icon(Icons.trending_up, color: Colors.blue),
+                        title: const Text("Lucro"),
+                        subtitle: Text("R\$ ${pedidosProvider.lucroEstimado.toStringAsFixed(2)}"),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ];
+                if (narrow) {
+                  return Column(
+                    children: [
+                      // Replace Expanded with SizedBox for Column stacking
+                      SizedBox(
+                        width: double.infinity,
+                        child: (children[0] as Expanded).child,
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: (children[2] as Expanded).child,
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: (children[4] as Expanded).child,
+                      ),
+                    ],
+                  );
+                }
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: children,
+                );
+              },
             ),
             const Divider(height: 32),
             const Text(
@@ -57,18 +84,32 @@ class FinanceiroScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ...pedidos.map((pedido) {
-              final total = (pedido.tempo ?? 0.0) + (pedido.tecido ?? 0.0);
+              final custos = (pedido.tecido ?? 0) + (pedido.gastosExtras ?? 0);
+              final lucro = (pedido.valor) - custos;
               return CustomCard(
                 child: ListTile(
                   title: Text(pedido.cliente),
                   subtitle: Text(
-                    "Tempo: R\$ ${(pedido.tempo ?? 0.0).toStringAsFixed(2)} | Tecido: R\$ ${(pedido.tecido ?? 0.0).toStringAsFixed(2)}",
+                    "Tecido: R\$ ${(pedido.tecido ?? 0.0).toStringAsFixed(2)} | Extras: R\$ ${(pedido.gastosExtras ?? 0.0).toStringAsFixed(2)}",
                   ),
-                  trailing: Text(
-                    "R\$ ${total.toStringAsFixed(2)}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple,
+                  trailing: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 140),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Total: R\$ ${pedido.valor.toStringAsFixed(2)}",
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                        ),
+                        Text(
+                          "Lucro: R\$ ${lucro.toStringAsFixed(2)}",
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.green),
+                        ),
+                      ],
                     ),
                   ),
                 ),
