@@ -12,6 +12,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseService.init();
   await AuthService.instance.init();
+  
   runApp(
     MultiProvider(
       providers: [

@@ -5,6 +5,8 @@ enum PedidoStatus { emAndamento, entregue, pago }
 class Pedido {
   final String id;
   final String cliente;
+  final String email;
+  final String telefone;
   final String descricao;
   final double valor;  // valor total do pedido (total)
   final double? tecido; // gasto com tecido (opcional)
@@ -30,6 +32,8 @@ class Pedido {
   Pedido({
     required this.id,
     required this.cliente,
+    this.email = '',
+    this.telefone = '',
     required this.descricao,
     required this.valor,
     this.tecido,
@@ -54,6 +58,8 @@ class Pedido {
   Map<String, dynamic> toMap() => {
         'id': id,
         'cliente': cliente,
+        'email': email,
+        'telefone': telefone,
         'descricao': descricao,
         'valor': valor,
         'tecido': tecido,
@@ -76,10 +82,12 @@ class Pedido {
       };
 
   factory Pedido.fromMap(Map map) => Pedido(
-        id: (map['id'] ?? '') as String,
-        cliente: (map['cliente'] ?? '') as String,
-        descricao: (map['descricao'] ?? '') as String,
-        valor: (map['valor'] ?? 0).toDouble(),
+        id: map['id'] as String,
+        cliente: map['cliente'] as String,
+        email: map['email'] as String? ?? '',
+        telefone: map['telefone'] as String? ?? '',
+        descricao: map['descricao'] as String,
+        valor: (map['valor'] as num).toDouble(),
         tecido: map['tecido'] == null ? null : (map['tecido']).toDouble(),
         tempo: map['tempo'] == null ? null : (map['tempo']).toDouble(),
         gastosExtras: map['gastosExtras'] == null ? null : (map['gastosExtras']).toDouble(),

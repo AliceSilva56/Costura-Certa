@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import '../models/pedido.dart';
 import '../services/pedidos_provider.dart';
 
@@ -83,23 +85,75 @@ class _PedidosScreenState extends State<PedidosScreen> {
                 color: color,
               ),
             ),
-            title: Text(pedido.cliente),
-            subtitle: RichText(
-              text: TextSpan(
-                style: DefaultTextStyle.of(context).style,
-                children: [
-                  TextSpan(text: '${pedido.descricao} • ${status == PedidoStatus.entregue ? 'Concluído' : 'Em andamento'} • '),
-                  TextSpan(
-                    text: pago ? 'Pago' : 'Não pago',
-                    style: TextStyle(
-                      color: pago ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.w600,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(pedido.cliente, style: const TextStyle(fontWeight: FontWeight.bold)),
+                if (pedido.telefone.isNotEmpty || pedido.email.isNotEmpty) 
+                  Text(
+                    '${pedido.telefone.isNotEmpty ? pedido.telefone : ''}${pedido.telefone.isNotEmpty && pedido.email.isNotEmpty ? ' • ' : ''}${pedido.email.isNotEmpty ? pedido.email : ''}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(pedido.descricao),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: status == PedidoStatus.entregue ? Colors.green[50] : Colors.amber[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: status == PedidoStatus.entregue ? Colors.green[100]! : Colors.amber[100]!),
+                      ),
+                      child: Text(
+                        status == PedidoStatus.entregue ? 'Concluído' : 'Em andamento',
+                        style: TextStyle(
+                          color: status == PedidoStatus.entregue ? Colors.green[800] : Colors.amber[800],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: pago ? Colors.green[50] : Colors.red[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: pago ? Colors.green[100]! : Colors.red[100]!),
+                      ),
+                      child: Text(
+                        pago ? 'Pago' : 'Não pago',
+                        style: TextStyle(
+                          color: pago ? Colors.green[800] : Colors.red[800],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Lucro: R\$ ${lucro.toStringAsFixed(2)}',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+                if (pedido.dataEntregaPrevista != null) 
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Entrega: ${DateFormat('dd/MM/yyyy').format(pedido.dataEntregaPrevista!)}',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ),
-                  TextSpan(text: ' • Lucro: R\$ ${lucro.toStringAsFixed(2)}'),
-                ],
-              ),
+              ],
             ),
+            isThreeLine: true,
             trailing: Text("R\$ ${pedido.valor.toStringAsFixed(2)}"),
             onTap: () => Navigator.pushNamed(context, '/detalhes', arguments: pedido),
             onLongPress: () => _mostrarOpcoes(context, pedido),
@@ -116,8 +170,15 @@ class _PedidosScreenState extends State<PedidosScreen> {
     );
   }
 
+  String _capitalizeFirstLetter(String text) {
+    if (text.isEmpty) return text;
+    return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
+  }
+
   void _mostrarFormulario(BuildContext context, {Pedido? pedidoExistente}) {
     final clienteController = TextEditingController(text: pedidoExistente?.cliente ?? "");
+    final emailController = TextEditingController(text: pedidoExistente?.email ?? "");
+    final telefoneController = TextEditingController(text: pedidoExistente?.telefone ?? "");
     final descricaoController = TextEditingController(text: pedidoExistente?.descricao ?? "");
     final tecidoController = TextEditingController(text: (pedidoExistente?.tecido ?? 0).toString());
     final gastosExtrasController = TextEditingController(text: (pedidoExistente?.gastosExtras ?? 0).toString());
@@ -125,17 +186,24 @@ class _PedidosScreenState extends State<PedidosScreen> {
     final descontoController = TextEditingController(text: (pedidoExistente?.desconto ?? 0).toString());
     PedidoStatus status = pedidoExistente?.status ?? PedidoStatus.emAndamento;
     bool pago = (pedidoExistente?.dataPagamento != null);
+    DateTime? dataEntregaPrevista = pedidoExistente?.dataEntregaPrevista;
+    final dataEntregaController = TextEditingController(
+      text: pedidoExistente?.dataEntregaPrevista != null 
+          ? DateFormat('dd/MM/yyyy').format(pedidoExistente!.dataEntregaPrevista!) 
+          : '',
+    );
 
     double parse(TextEditingController c) => double.tryParse(c.text.replaceAll(',', '.')) ?? 0.0;
 
     showDialog(
       context: context,
       builder: (ctx) {
-        return StatefulBuilder(builder: (ctx, setState) {
+        return StatefulBuilder(builder: (BuildContext context, StateSetter setState) {
+          // Funções auxiliares
           void recomputeIfEmptyMaoDeObra() {
             final tecido = parse(tecidoController);
             final extras = parse(gastosExtrasController);
-            final suggested = (tecido + extras) * 0.5;
+            final suggested = (tecido + extras) * 5;
             if ((pedidoExistente == null && (maoDeObraController.text.isEmpty || parse(maoDeObraController) == 0))) {
               maoDeObraController.text = suggested.toStringAsFixed(2);
             }
@@ -143,8 +211,8 @@ class _PedidosScreenState extends State<PedidosScreen> {
 
           void onChanged(_) => setState(() {});
 
+          // Inicializa valores
           recomputeIfEmptyMaoDeObra();
-
           final tecido = parse(tecidoController);
           final extras = parse(gastosExtrasController);
           final mao = parse(maoDeObraController);
@@ -154,25 +222,81 @@ class _PedidosScreenState extends State<PedidosScreen> {
 
           return AlertDialog(
             insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            title: Text(pedidoExistente == null ? "Novo Pedido" : "Editar Pedido"),
-            content: Builder(
-              builder: (innerCtx) {
-                final screenW = MediaQuery.of(innerCtx).size.width;
-                // Reserve ~10% margins and clamp to a reasonable min/max
-                final target = screenW * 0.9;
-                final double w = target.clamp(280.0, 520.0);
-                return SizedBox(
-                  width: w,
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(children: [
-                          Expanded(child: TextField(controller: clienteController, maxLines: 1, textInputAction: TextInputAction.next, decoration: const InputDecoration(labelText: "Cliente", isDense: true), onChanged: onChanged)),
-                          const SizedBox(width: 8),
-                          Expanded(child: TextField(controller: descricaoController, maxLines: 1, textInputAction: TextInputAction.next, decoration: const InputDecoration(labelText: "Serviço", isDense: true), onChanged: onChanged)),
-                        ]),
+            title: Text(pedidoExistente == null ? 'Novo Pedido' : 'Editar Pedido'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  TextField(
+                    controller: clienteController,
+                    maxLines: 1,
+                    textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: "Cliente",
+                      isDense: true,
+                    ),
+                    onChanged: (value) {
+                      if (value.isNotEmpty) {
+                        final cursorPosition = clienteController.selection;
+                        clienteController.text = _capitalizeFirstLetter(value);
+                        clienteController.selection = cursorPosition;
+                      }
+                      onChanged(value);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: emailController,
+                          maxLines: 1,
+                          textInputAction: TextInputAction.next,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: "E-mail",
+                            isDense: true,
+                          ),
+                          onChanged: onChanged,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: telefoneController,
+                          maxLines: 1,
+                          textInputAction: TextInputAction.next,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: "Telefone",
+                            isDense: true,
+                          ),
+                          onChanged: onChanged,
+                        ),
+                      ),
+                    ],
+                  ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: descricaoController,
+                          maxLines: 1,
+                          textInputAction: TextInputAction.next,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: const InputDecoration(
+                            labelText: "Serviço",
+                            isDense: true,
+                          ),
+                          onChanged: (value) {
+                            if (value.isNotEmpty) {
+                              final cursorPosition = descricaoController.selection;
+                              descricaoController.text = _capitalizeFirstLetter(value);
+                              descricaoController.selection = cursorPosition;
+                            }
+                            onChanged(value);
+                          },
+                        ),
+                        ),
                         const SizedBox(height: 8),
                         Row(children: [
                           Expanded(child: TextField(controller: tecidoController, maxLines: 1, textInputAction: TextInputAction.next, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Valor do tecido", isDense: true), onChanged: onChanged)),
@@ -185,6 +309,48 @@ class _PedidosScreenState extends State<PedidosScreen> {
                           const SizedBox(width: 8),
                           Expanded(child: TextField(controller: descontoController, maxLines: 1, textInputAction: TextInputAction.done, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Desconto", isDense: true), onChanged: onChanged)),
                         ]),
+                        const SizedBox(height: 8),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: dataEntregaController,
+                          decoration: const InputDecoration(
+                            labelText: 'Prazo de Conclusão',
+                            suffixIcon: Icon(Icons.calendar_today),
+                            isDense: true,
+                          ),
+                          readOnly: true,
+                          onTap: () async {
+                            final DateTime? picked = await showDatePicker(
+                              context: context,
+                              initialDate: dataEntregaPrevista ?? DateTime.now().add(const Duration(days: 7)),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2100),
+                              locale: const Locale('pt', 'BR'),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: const ColorScheme.light(
+                                      primary: Colors.blue, // Cor principal do cabeçalho
+                                      onPrimary: Colors.white, // Cor do texto do cabeçalho
+                                      onSurface: Colors.black, // Cor do texto dos dias
+                                    ),
+                                    textButtonTheme: TextButtonThemeData(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.blue, // Cor dos botões
+                                      ),
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              dataEntregaPrevista = picked;
+                              dataEntregaController.text = DateFormat('dd/MM/yyyy').format(picked);
+                              setState(() {});
+                            }
+                          },
+                        ),
                         const SizedBox(height: 8),
                         Row(children: [
                           Expanded(child: _InfoChip(label: 'Lucro', value: lucro)),
@@ -219,37 +385,50 @@ class _PedidosScreenState extends State<PedidosScreen> {
                 );
               },
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
               ElevatedButton(
-                onPressed: () {
-                  final novoPedido = Pedido(
-                    id: pedidoExistente?.id ?? const Uuid().v4(),
-                    cliente: clienteController.text.trim(),
-                    descricao: descricaoController.text.trim(),
-                    valor: total,
-                    tecido: tecido,
-                    gastosExtras: extras,
-                    maoDeObra: mao,
-                    desconto: desc,
-                    precoSugerido: (tecido + extras) * 0.5,
-                    status: status,
-                    dataCriacao: pedidoExistente?.dataCriacao ?? DateTime.now(),
-                    dataPagamento: pago
-                        ? (pedidoExistente?.dataPagamento ?? DateTime.now())
-                        : null,
-                  );
+                onPressed: () async {
+                  try {
+                    final pedidosProvider = Provider.of<PedidosProvider>(context, listen: false);
+                    final pedido = Pedido(
+                      id: pedidoExistente?.id ?? const Uuid().v4(),
+                      cliente: clienteController.text.trim(),
+                      email: emailController.text.trim(),
+                      telefone: telefoneController.text.trim(),
+                      descricao: descricaoController.text.trim(),
+                      valor: total,
+                      tecido: tecido == 0 ? null : tecido,
+                      gastosExtras: extras == 0 ? null : extras,
+                      maoDeObra: mao == 0 ? null : mao,
+                      desconto: desc == 0 ? null : desc,
+                      status: status,
+                      dataCriacao: pedidoExistente?.dataCriacao ?? DateTime.now(),
+                      dataEntregaPrevista: dataEntregaPrevista,
+                      dataPagamento: pago ? (pedidoExistente?.dataPagamento ?? DateTime.now()) : null,
+                    );
 
-                  final pedidosProvider = Provider.of<PedidosProvider>(context, listen: false);
-                  if (pedidoExistente == null) {
-                    pedidosProvider.adicionarPedido(novoPedido);
-                  } else {
-                    pedidosProvider.editarPedido(pedidoExistente.id, novoPedido);
+                    if (pedidoExistente == null) {
+                      await pedidosProvider.adicionarPedido(pedido);
+                    } else {
+                      await pedidosProvider.editarPedido(pedidoExistente!.id, pedido);
+                    }
+
+                    if (mounted) {
+                      Navigator.pop(context);
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Erro ao salvar pedido: $e')),
+                      );
+                    }
                   }
-
-                  Navigator.pop(ctx);
-                },
-                child: const Text("Salvar"),
+                  },
+                child: const Text('Salvar'),
               ),
             ],
           );
