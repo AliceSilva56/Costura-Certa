@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_card.dart';
 import '../widgets/custom_button.dart';
 import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../services/pedidos_provider.dart';
 
 class ConfigScreen extends StatefulWidget {
   const ConfigScreen({super.key});
@@ -124,6 +126,19 @@ class _ConfigScreenState extends State<ConfigScreen> {
                     ),
                   );
                 },
+              ),
+            ),
+            const SizedBox(height: 12),
+            CustomCard(
+              child: ListTile(
+                leading: const Icon(Icons.history, color: Color(0xFF6A1B9A)),
+                title: const Text("Histórico"),
+                subtitle: const Text("Ver pedidos pagos e concluídos"),
+                trailing: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD54F)),
+                  onPressed: () => Navigator.pushNamed(context, '/historico'),
+                  child: const Text("Abrir"),
+                ),
               ),
             ),
             const SizedBox(height: 12),

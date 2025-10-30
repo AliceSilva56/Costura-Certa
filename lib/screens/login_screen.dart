@@ -16,6 +16,14 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _rememberMe = true;
   bool _loading = false;
 
+  String capitalizeWords(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -28,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
     try {
       await AuthService.instance.login(
-        name: _nameController.text.trim(),
+        name: capitalizeWords(_nameController.text.trim()),
         pin: _pinController.text.trim().isEmpty ? null : _pinController.text.trim(),
         rememberMe: _rememberMe,
       );
@@ -74,9 +82,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           labelText: 'Nome do ateliê ou usuário',
                           border: OutlineInputBorder(),
                         ),
+                        textCapitalization: TextCapitalization.words,
                         validator: (v) => (v == null || v.trim().isEmpty)
                             ? 'Informe um nome'
                             : null,
+                        onChanged: (value) {
+                          final capitalizedText = capitalizeWords(value);
+                          if (capitalizedText != value) {
+                            _nameController.text = capitalizedText;
+                            _nameController.selection = TextSelection.fromPosition(
+                              TextPosition(offset: capitalizedText.length),
+                            );
+                          }
+                        },
                       ),
                       const SizedBox(height: 12),
                       TextFormField(

@@ -9,6 +9,7 @@ import 'screens/detalhes_pedido_screen.dart';
 import 'screens/clientes_screen.dart';
 import 'screens/cliente_detalhes_screen.dart';
 import 'screens/medidas_screen.dart';
+import 'screens/historico_screen.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
   '/login': (context) => const LoginScreen(),
@@ -20,4 +21,5 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/clientes': (context) => const ClientesScreen(),
   '/cliente_detalhes': (context) => const ClienteDetalhesScreen(),
   '/medidas': (context) => const MedidasScreen(),
+  '/historico': (context) => const HistoricoScreen(),
 };

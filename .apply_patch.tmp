@@ -1,0 +1,32 @@
+*** Begin Patch
+*** Update File: c:\Users\aluno\Documents\Alice\Proj.Flutter\Costura-Certa\lib\screens\pedidos_screen.dart
+@@
+-    return Scaffold(
+-      appBar: AppBar(
+-        title: const Text('Pedidos'),
+-        actions: [
+-          IconButton(
+-            icon: const Icon(Icons.history),
+-            tooltip: 'Histórico',
+-            onPressed: () => Navigator.pushNamed(context, '/historico'),
+-          ),
+-        ],
+-      ),
++    return Scaffold(
++      appBar: AppBar(
++        // título removido conforme solicitado
++        automaticallyImplyLeading: false,
++        actions: [
++          IconButton(
++            icon: const Icon(Icons.calculate),
++            tooltip: 'Calculadora',
++            onPressed: () => Navigator.pushNamed(context, '/calculadora'),
++          ),
++          IconButton(
++            icon: const Icon(Icons.history),
++            tooltip: 'Histórico',
++            onPressed: () => Navigator.pushNamed(context, '/historico'),
++          ),
++        ],
++      ),
+*** End Patch

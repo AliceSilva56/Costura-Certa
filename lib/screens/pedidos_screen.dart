@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import '../models/pedido.dart';
 import '../services/pedidos_provider.dart';
@@ -16,6 +15,22 @@ class PedidosScreen extends StatefulWidget {
 class _PedidosScreenState extends State<PedidosScreen> {
   PedidoStatus? _statusFilter; // null = todos
   bool _paidOnly = false;
+  
+  // Variáveis para controlar os erros dos campos
+  String? clienteError;
+  String? emailError;
+  String? telefoneError;
+  String? tecidoError;
+  String? gastosExtrasError;
+  String? descontoError;
+
+  String capitalizeWords(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,80 +95,28 @@ class _PedidosScreenState extends State<PedidosScreen> {
               backgroundColor: color.withOpacity(0.2),
               child: Icon(
                 status == PedidoStatus.emAndamento
-                    ? Icons.timelapse
-                    : Icons.check_circle,
+                    ? Icons.timelapse // icone de tempo
+                    : Icons.check_circle, // icone de check
                 color: color,
               ),
             ),
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(pedido.cliente, style: const TextStyle(fontWeight: FontWeight.bold)),
-                if (pedido.telefone.isNotEmpty || pedido.email.isNotEmpty) 
-                  Text(
-                    '${pedido.telefone.isNotEmpty ? pedido.telefone : ''}${pedido.telefone.isNotEmpty && pedido.email.isNotEmpty ? ' • ' : ''}${pedido.email.isNotEmpty ? pedido.email : ''}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(pedido.descricao),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: status == PedidoStatus.entregue ? Colors.green[50] : Colors.amber[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: status == PedidoStatus.entregue ? Colors.green[100]! : Colors.amber[100]!),
-                      ),
-                      child: Text(
-                        status == PedidoStatus.entregue ? 'Concluído' : 'Em andamento',
-                        style: TextStyle(
-                          color: status == PedidoStatus.entregue ? Colors.green[800] : Colors.amber[800],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: pago ? Colors.green[50] : Colors.red[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: pago ? Colors.green[100]! : Colors.red[100]!),
-                      ),
-                      child: Text(
-                        pago ? 'Pago' : 'Não pago',
-                        style: TextStyle(
-                          color: pago ? Colors.green[800] : Colors.red[800],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'Lucro: R\$ ${lucro.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
-                if (pedido.dataEntregaPrevista != null) 
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Entrega: ${DateFormat('dd/MM/yyyy').format(pedido.dataEntregaPrevista!)}',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
+            title: Text(pedido.cliente),
+            subtitle: RichText(
+              text: TextSpan(
+                style: DefaultTextStyle.of(context).style,
+                children: [
+                  TextSpan(text: '${pedido.descricao} • ${status == PedidoStatus.entregue ? 'Concluído' : 'Em andamento'} • '),
+                  TextSpan(
+                    text: pago ? 'Pago' : 'Não pago',
+                    style: TextStyle(
+                      color: pago ? Colors.green : Colors.red,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-              ],
+                  TextSpan(text: ' • Lucro: R\$ ${lucro.toStringAsFixed(2)}'),
+                ],
+              ),
             ),
-            isThreeLine: true,
             trailing: Text("R\$ ${pedido.valor.toStringAsFixed(2)}"),
             onTap: () => Navigator.pushNamed(context, '/detalhes', arguments: pedido),
             onLongPress: () => _mostrarOpcoes(context, pedido),
@@ -165,14 +128,9 @@ class _PedidosScreenState extends State<PedidosScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _mostrarFormulario(context),
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add), // de adicionar
       ),
     );
-  }
-
-  String _capitalizeFirstLetter(String text) {
-    if (text.isEmpty) return text;
-    return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
   }
 
   void _mostrarFormulario(BuildContext context, {Pedido? pedidoExistente}) {
@@ -188,8 +146,8 @@ class _PedidosScreenState extends State<PedidosScreen> {
     bool pago = (pedidoExistente?.dataPagamento != null);
     DateTime? dataEntregaPrevista = pedidoExistente?.dataEntregaPrevista;
     final dataEntregaController = TextEditingController(
-      text: pedidoExistente?.dataEntregaPrevista != null 
-          ? DateFormat('dd/MM/yyyy').format(pedidoExistente!.dataEntregaPrevista!) 
+      text: pedidoExistente?.dataEntregaPrevista != null
+          ? DateFormat('dd/MM/yyyy').format(pedidoExistente!.dataEntregaPrevista!)
           : '',
     );
 
@@ -198,12 +156,11 @@ class _PedidosScreenState extends State<PedidosScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        return StatefulBuilder(builder: (BuildContext context, StateSetter setState) {
-          // Funções auxiliares
+        return StatefulBuilder(builder: (ctx, setState) {
           void recomputeIfEmptyMaoDeObra() {
             final tecido = parse(tecidoController);
             final extras = parse(gastosExtrasController);
-            final suggested = (tecido + extras) * 5;
+            final suggested = (tecido + extras) * 0.5;
             if ((pedidoExistente == null && (maoDeObraController.text.isEmpty || parse(maoDeObraController) == 0))) {
               maoDeObraController.text = suggested.toStringAsFixed(2);
             }
@@ -211,8 +168,8 @@ class _PedidosScreenState extends State<PedidosScreen> {
 
           void onChanged(_) => setState(() {});
 
-          // Inicializa valores
           recomputeIfEmptyMaoDeObra();
+
           final tecido = parse(tecidoController);
           final extras = parse(gastosExtrasController);
           final mao = parse(maoDeObraController);
@@ -222,61 +179,90 @@ class _PedidosScreenState extends State<PedidosScreen> {
 
           return AlertDialog(
             insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            title: Text(pedidoExistente == null ? 'Novo Pedido' : 'Editar Pedido'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  TextField(
-                    controller: clienteController,
-                    maxLines: 1,
-                    textInputAction: TextInputAction.next,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: "Cliente",
-                      isDense: true,
-                    ),
-                    onChanged: (value) {
-                      if (value.isNotEmpty) {
-                        final cursorPosition = clienteController.selection;
-                        clienteController.text = _capitalizeFirstLetter(value);
-                        clienteController.selection = cursorPosition;
-                      }
-                      onChanged(value);
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: emailController,
+            title: Text(pedidoExistente == null ? "Novo Pedido" : "Editar Pedido"),
+            content: Builder(
+              builder: (innerCtx) {
+                final screenW = MediaQuery.of(innerCtx).size.width;
+                // Reserve ~10% margins and clamp to a reasonable min/max
+                final target = screenW * 0.9;
+                final double w = target.clamp(280.0, 520.0);
+                return SizedBox(
+                  width: w,
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: clienteController,
                           maxLines: 1,
                           textInputAction: TextInputAction.next,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            labelText: "E-mail",
+                          textCapitalization: TextCapitalization.words,
+                          decoration: InputDecoration(
+                            labelText: "Cliente",
                             isDense: true,
+                            errorText: clienteError,
                           ),
-                          onChanged: onChanged,
+                          onChanged: (value) {
+                            setState(() => clienteError = null);
+                            final capitalizedText = capitalizeWords(value);
+                            if (capitalizedText != value) {
+                              clienteController.text = capitalizedText;
+                              clienteController.selection = TextSelection.fromPosition(
+                                TextPosition(offset: capitalizedText.length),
+                              );
+                            }
+                            onChanged(value);
+                          },
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: telefoneController,
-                          maxLines: 1,
-                          textInputAction: TextInputAction.next,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            labelText: "Telefone",
-                            isDense: true,
-                          ),
-                          onChanged: onChanged,
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: emailController,
+                                maxLines: 1,
+                                textInputAction: TextInputAction.next,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: InputDecoration(
+                                  labelText: "E-mail",
+                                  isDense: true,
+                                  errorText: emailError,
+                                  // reduz o tamanho da fonte do texto de erro para caber abaixo do input
+                                  errorStyle: const TextStyle(fontSize: 10),
+                                ),
+                                onChanged: (value) {
+                                  setState(() => emailError = null);
+                                  onChanged(value);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                controller: telefoneController,
+                                maxLines: 1,
+                                textInputAction: TextInputAction.next,
+                                keyboardType: TextInputType.phone,
+                                decoration: InputDecoration(
+                                  labelText: "Telefone",
+                                  isDense: true,
+                                  errorText: telefoneError,
+                                ),
+                                onChanged: (value) {
+                                  setState(() => telefoneError = null);
+                                  if (value.isNotEmpty && !RegExp(r'^[0-9]*$').hasMatch(value)) {
+                                    telefoneController.text = value.replaceAll(RegExp(r'[^0-9]'), '');
+                                    telefoneController.selection = TextSelection.fromPosition(
+                                      TextPosition(offset: telefoneController.text.length),
+                                    );
+                                  }
+                                  onChanged(value);
+                                },
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                         const SizedBox(height: 8),
                         TextField(
                           controller: descricaoController,
@@ -288,33 +274,108 @@ class _PedidosScreenState extends State<PedidosScreen> {
                             isDense: true,
                           ),
                           onChanged: (value) {
-                            if (value.isNotEmpty) {
-                              final cursorPosition = descricaoController.selection;
-                              descricaoController.text = _capitalizeFirstLetter(value);
-                              descricaoController.selection = cursorPosition;
+                            final capitalizedText = capitalizeWords(value);
+                            if (capitalizedText != value) {
+                              descricaoController.text = capitalizedText;
+                              descricaoController.selection = TextSelection.fromPosition(
+                                TextPosition(offset: capitalizedText.length),
+                              );
                             }
                             onChanged(value);
                           },
                         ),
-                        ),
                         const SizedBox(height: 8),
                         Row(children: [
-                          Expanded(child: TextField(controller: tecidoController, maxLines: 1, textInputAction: TextInputAction.next, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Valor do tecido", isDense: true), onChanged: onChanged)),
+                          Expanded(
+                            child: TextField(
+                              controller: tecidoController,
+                              maxLines: 1,
+                              textInputAction: TextInputAction.next,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: "Valor do tecido",
+                                isDense: true,
+                                errorText: tecidoError,
+                              ),
+                              onChanged: (value) {
+                                setState(() => tecidoError = null);
+                                if (value.isNotEmpty && !RegExp(r'^[0-9]*[,.]?[0-9]*$').hasMatch(value)) {
+                                  tecidoController.text = value.replaceAll(RegExp(r'[^0-9,.]'), '');
+                                  tecidoController.selection = TextSelection.fromPosition(
+                                    TextPosition(offset: tecidoController.text.length),
+                                  );
+                                  setState(() => tecidoError = 'Digite apenas números');
+                                }
+                                onChanged(value);
+                              },
+                            )
+                          ),
                           const SizedBox(width: 8),
-                          Expanded(child: TextField(controller: gastosExtrasController, maxLines: 1, textInputAction: TextInputAction.next, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Gastos extras", isDense: true), onChanged: onChanged)),
+                          Expanded(
+                            child: TextField(
+                              controller: gastosExtrasController,
+                              maxLines: 1,
+                              textInputAction: TextInputAction.next,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: "Gastos extras",
+                                isDense: true,
+                                errorText: gastosExtrasError,
+                              ),
+                              onChanged: (value) {
+                                setState(() => gastosExtrasError = null);
+                                if (value.isNotEmpty && !RegExp(r'^[0-9]*[,.]?[0-9]*$').hasMatch(value)) {
+                                  gastosExtrasController.text = value.replaceAll(RegExp(r'[^0-9,.]'), '');
+                                  gastosExtrasController.selection = TextSelection.fromPosition(
+                                    TextPosition(offset: gastosExtrasController.text.length),
+                                  );
+                                  setState(() => gastosExtrasError = 'Digite apenas números');
+                                }
+                                onChanged(value);
+                              },
+                            )
+                          ),
                         ]),
                         const SizedBox(height: 8),
                         Row(children: [
                           Expanded(child: TextField(controller: maoDeObraController, maxLines: 1, textInputAction: TextInputAction.next, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Mão de obra (sugerido)", isDense: true), onChanged: onChanged)),
                           const SizedBox(width: 8),
-                          Expanded(child: TextField(controller: descontoController, maxLines: 1, textInputAction: TextInputAction.done, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Desconto", isDense: true), onChanged: onChanged)),
+                          Expanded(
+                            child: TextField(
+                              controller: descontoController,
+                              maxLines: 1,
+                              textInputAction: TextInputAction.done,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: "Desconto",
+                                isDense: true,
+                                errorText: descontoError,
+                              ),
+                              onChanged: (value) {
+                                setState(() => descontoError = null);
+                                if (value.isNotEmpty && !RegExp(r'^[0-9]*[,.]?[0-9]*$').hasMatch(value)) {
+                                  descontoController.text = value.replaceAll(RegExp(r'[^0-9,.]'), '');
+                                  descontoController.selection = TextSelection.fromPosition(
+                                    TextPosition(offset: descontoController.text.length),
+                                  );
+                                  setState(() => descontoError = 'Digite apenas números');
+                                }
+                                onChanged(value);
+                              },
+                            )
+                          ),
                         ]),
                         const SizedBox(height: 8),
+                        Row(children: [
+                          Expanded(child: _InfoChip(label: 'Lucro', value: lucro)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _InfoChip(label: 'Total', value: total)),
+                        ]),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: dataEntregaController,
                           decoration: const InputDecoration(
-                            labelText: 'Prazo de Conclusão',
+                            labelText: 'Previsão de entrega',
                             suffixIcon: Icon(Icons.calendar_today),
                             isDense: true,
                           ),
@@ -326,37 +387,15 @@ class _PedidosScreenState extends State<PedidosScreen> {
                               firstDate: DateTime.now(),
                               lastDate: DateTime(2100),
                               locale: const Locale('pt', 'BR'),
-                              builder: (context, child) {
-                                return Theme(
-                                  data: Theme.of(context).copyWith(
-                                    colorScheme: const ColorScheme.light(
-                                      primary: Colors.blue, // Cor principal do cabeçalho
-                                      onPrimary: Colors.white, // Cor do texto do cabeçalho
-                                      onSurface: Colors.black, // Cor do texto dos dias
-                                    ),
-                                    textButtonTheme: TextButtonThemeData(
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.blue, // Cor dos botões
-                                      ),
-                                    ),
-                                  ),
-                                  child: child!,
-                                );
-                              },
                             );
                             if (picked != null) {
-                              dataEntregaPrevista = picked;
-                              dataEntregaController.text = DateFormat('dd/MM/yyyy').format(picked);
-                              setState(() {});
+                              setState(() {
+                                dataEntregaPrevista = picked;
+                                dataEntregaController.text = DateFormat('dd/MM/yyyy').format(picked);
+                              });
                             }
                           },
                         ),
-                        const SizedBox(height: 8),
-                        Row(children: [
-                          Expanded(child: _InfoChip(label: 'Lucro', value: lucro)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _InfoChip(label: 'Total', value: total)),
-                        ]),
                         const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
@@ -385,50 +424,74 @@ class _PedidosScreenState extends State<PedidosScreen> {
                 );
               },
             ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
               ElevatedButton(
-                onPressed: () async {
-                  try {
-                    final pedidosProvider = Provider.of<PedidosProvider>(context, listen: false);
-                    final pedido = Pedido(
-                      id: pedidoExistente?.id ?? const Uuid().v4(),
-                      cliente: clienteController.text.trim(),
-                      email: emailController.text.trim(),
-                      telefone: telefoneController.text.trim(),
-                      descricao: descricaoController.text.trim(),
-                      valor: total,
-                      tecido: tecido == 0 ? null : tecido,
-                      gastosExtras: extras == 0 ? null : extras,
-                      maoDeObra: mao == 0 ? null : mao,
-                      desconto: desc == 0 ? null : desc,
-                      status: status,
-                      dataCriacao: pedidoExistente?.dataCriacao ?? DateTime.now(),
-                      dataEntregaPrevista: dataEntregaPrevista,
-                      dataPagamento: pago ? (pedidoExistente?.dataPagamento ?? DateTime.now()) : null,
-                    );
-
-                    if (pedidoExistente == null) {
-                      await pedidosProvider.adicionarPedido(pedido);
-                    } else {
-                      await pedidosProvider.editarPedido(pedidoExistente!.id, pedido);
-                    }
-
-                    if (mounted) {
-                      Navigator.pop(context);
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Erro ao salvar pedido: $e')),
-                      );
-                    }
+                onPressed: () {
+                  // Validações
+                  final cliente = clienteController.text.trim();
+                  final email = emailController.text.trim();
+                  final telefone = telefoneController.text.trim();
+                  
+                  bool temErro = false;
+                  
+                  // Validar se cliente está vazio
+                  if (cliente.isEmpty) {
+                    setState(() {
+                      clienteError = 'O nome do cliente não pode estar vazio';
+                      temErro = true;
+                    });
                   }
-                  },
-                child: const Text('Salvar'),
+                  
+                  // Validar email
+                  if (email.isNotEmpty && !email.endsWith('@gmail.com') && 
+                      !email.endsWith('@outlook.com') && !email.endsWith('@hotmail.com')) {
+                    setState(() {
+                      emailError = 'Final @gmail.com, @outlook.com ou @hotmail.com';
+                      temErro = true;
+                    });
+                  }
+                  
+                  // Validar telefone (apenas números)
+                  if (telefone.isNotEmpty && !RegExp(r'^[0-9]+$').hasMatch(telefone)) {
+                    setState(() {
+                      telefoneError = 'O telefone deve conter apenas números';
+                      temErro = true;
+                    });
+                  }
+                  
+                  if (temErro) return;
+
+                  final novoPedido = Pedido(
+                    id: pedidoExistente?.id ?? const Uuid().v4(),
+                    cliente: capitalizeWords(cliente),
+                    email: email,
+                    telefone: telefone,
+                    descricao: capitalizeWords(descricaoController.text.trim()),
+                    valor: total,
+                    tecido: tecido,
+                    gastosExtras: extras,
+                    maoDeObra: mao,
+                    desconto: desc,
+                    precoSugerido: (tecido + extras) * 5,
+          status: status,
+          dataCriacao: pedidoExistente?.dataCriacao ?? DateTime.now(),
+          dataEntregaPrevista: dataEntregaPrevista,
+          dataPagamento: pago
+            ? (pedidoExistente?.dataPagamento ?? DateTime.now())
+            : null,
+                  );
+
+                  final pedidosProvider = Provider.of<PedidosProvider>(context, listen: false);
+                  if (pedidoExistente == null) {
+                    pedidosProvider.adicionarPedido(novoPedido);
+                  } else {
+                    pedidosProvider.editarPedido(pedidoExistente.id, novoPedido);
+                  }
+
+                  Navigator.pop(ctx);
+                },
+                child: const Text("Salvar"),
               ),
             ],
           );

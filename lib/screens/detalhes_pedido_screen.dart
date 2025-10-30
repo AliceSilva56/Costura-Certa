@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
 import '../models/pedido.dart';
 import '../services/pedidos_provider.dart';
 
@@ -41,11 +42,15 @@ class DetalhesPedidoScreen extends StatelessWidget {
         child: ListView(
           children: [
             _info('Cliente', pedido.cliente),
+            if (pedido.email.isNotEmpty) _info('E-mail', pedido.email),
+            if (pedido.telefone.isNotEmpty) _info('Telefone', pedido.telefone),
             _info('Serviço', pedido.descricao),
             _money('Valor do tecido', pedido.tecido ?? 0),
             _money('Gastos extras', pedido.gastosExtras ?? 0),
             _money('Mão de obra', pedido.maoDeObra ?? (pedido.tempo ?? 0)),
             _money('Desconto', pedido.desconto ?? 0),
+            if (pedido.dataEntregaPrevista != null)
+              _info('Previsão de entrega', DateFormat('dd/MM/yyyy').format(pedido.dataEntregaPrevista!)),
             const Divider(height: 24),
             _money('Total', pedido.valor),
             _money('Lucro', lucro),
@@ -175,6 +180,8 @@ class DetalhesPedidoScreen extends StatelessWidget {
 
   void _editar(BuildContext context, Pedido pedidoExistente) {
     final clienteController = TextEditingController(text: pedidoExistente.cliente);
+    final emailController = TextEditingController(text: pedidoExistente.email);
+    final telefoneController = TextEditingController(text: pedidoExistente.telefone);
     final descricaoController = TextEditingController(text: pedidoExistente.descricao);
     final tecidoController = TextEditingController(text: (pedidoExistente.tecido ?? 0).toString());
     final gastosExtrasController = TextEditingController(text: (pedidoExistente.gastosExtras ?? 0).toString());
@@ -182,6 +189,10 @@ class DetalhesPedidoScreen extends StatelessWidget {
     final descontoController = TextEditingController(text: (pedidoExistente.desconto ?? 0).toString());
     PedidoStatus status = pedidoExistente.status ?? PedidoStatus.emAndamento;
     bool pago = pedidoExistente.dataPagamento != null;
+    DateTime? dataEntregaPrevista = pedidoExistente.dataEntregaPrevista;
+    final dataEntregaController = TextEditingController(
+      text: pedidoExistente.dataEntregaPrevista != null ? DateFormat('dd/MM/yyyy').format(pedidoExistente.dataEntregaPrevista!) : '',
+    );
 
     double parse(TextEditingController c) => double.tryParse(c.text.replaceAll(',', '.')) ?? 0.0;
 
@@ -207,6 +218,14 @@ class DetalhesPedidoScreen extends StatelessWidget {
                   Expanded(child: TextField(controller: descricaoController, decoration: const InputDecoration(labelText: 'Serviço'), onChanged: onChanged)),
                 ]),
                 const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: emailController, decoration: const InputDecoration(labelText: 'E-mail'), keyboardType: TextInputType.emailAddress, onChanged: onChanged)),
+                    const SizedBox(width: 8),
+                    Expanded(child: TextField(controller: telefoneController, decoration: const InputDecoration(labelText: 'Telefone'), keyboardType: TextInputType.phone, onChanged: onChanged)),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 Row(children: [
                   Expanded(child: TextField(controller: tecidoController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Valor do tecido'), onChanged: onChanged)),
                   const SizedBox(width: 8),
@@ -218,6 +237,31 @@ class DetalhesPedidoScreen extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(child: TextField(controller: descontoController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Desconto'), onChanged: onChanged)),
                 ]),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: dataEntregaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Previsão de entrega',
+                    suffixIcon: Icon(Icons.calendar_today),
+                    isDense: true,
+                  ),
+                  readOnly: true,
+                  onTap: () async {
+                    final DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: dataEntregaPrevista ?? DateTime.now().add(const Duration(days: 7)),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
+                      locale: const Locale('pt', 'BR'),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        dataEntregaPrevista = picked;
+                        dataEntregaController.text = DateFormat('dd/MM/yyyy').format(picked);
+                      });
+                    }
+                  },
+                ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -245,28 +289,30 @@ class DetalhesPedidoScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 final novoPedido = Pedido(
-                  id: pedidoExistente.id,
-                  cliente: clienteController.text.trim(),
-                  descricao: descricaoController.text.trim(),
-                  valor: total,
-                  tecido: tecido,
-                  gastosExtras: extras,
-                  maoDeObra: mao,
-                  desconto: desc,
-                  itensInsumo: pedidoExistente.itensInsumo,
-                  tempoHoras: pedidoExistente.tempoHoras,
-                  valorHora: pedidoExistente.valorHora,
-                  custoOperacional: pedidoExistente.custoOperacional,
-                  margemLucroPercent: pedidoExistente.margemLucroPercent,
-                  status: status,
-                  dataCriacao: pedidoExistente.dataCriacao,
-                  dataEntregaPrevista: pedidoExistente.dataEntregaPrevista,
-                  dataEntregaReal: pedidoExistente.dataEntregaReal,
-                  dataPagamento: pago
-                      ? (pedidoExistente.dataPagamento ?? DateTime.now())
-                      : null,
-                  precoSugerido: pedidoExistente.precoSugerido,
-                  precoFinal: pedidoExistente.precoFinal,
+          id: pedidoExistente.id,
+          cliente: clienteController.text.trim(),
+          email: emailController.text.trim(),
+          telefone: telefoneController.text.trim(),
+          descricao: descricaoController.text.trim(),
+          valor: total,
+          tecido: tecido,
+          gastosExtras: extras,
+          maoDeObra: mao,
+          desconto: desc,
+          itensInsumo: pedidoExistente.itensInsumo,
+          tempoHoras: pedidoExistente.tempoHoras,
+          valorHora: pedidoExistente.valorHora,
+          custoOperacional: pedidoExistente.custoOperacional,
+          margemLucroPercent: pedidoExistente.margemLucroPercent,
+          status: status,
+          dataCriacao: pedidoExistente.dataCriacao,
+          dataEntregaPrevista: dataEntregaPrevista,
+          dataEntregaReal: pedidoExistente.dataEntregaReal,
+          dataPagamento: pago
+            ? (pedidoExistente.dataPagamento ?? DateTime.now())
+            : null,
+          precoSugerido: pedidoExistente.precoSugerido,
+          precoFinal: pedidoExistente.precoFinal,
                 );
                 Provider.of<PedidosProvider>(context, listen: false).editarPedido(pedidoExistente.id, novoPedido);
                 Navigator.pop(ctx);

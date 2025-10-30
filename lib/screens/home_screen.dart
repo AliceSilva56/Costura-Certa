@@ -60,6 +60,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.calculate, color: Color(0xFF6A1B9A)),
             onPressed: () => Navigator.pushNamed(context, '/calculadora'),
           ),
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Histórico',
+            onPressed: () => Navigator.pushNamed(context, '/historico'),
+          ),
         ],
       ),
       body: _tabs[_index],
